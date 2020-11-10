@@ -9,6 +9,8 @@ custom:
     includeModules:
       packagePath: 'package.json'
     packager: 'npm'
+  serverless-offline:
+    host: '0.0.0.0'
 plugins:
   - serverless-functions-base-path
   - serverless-webpack
@@ -18,3 +20,8 @@ functions:
     handler: hello/hello.handler
     events:
       - http: GET hello
+  iidx:
+    handler: iidxCapture/iidxCapture.handler
+    events:
+      - http: GET iidx
+      - http: POST iidx
