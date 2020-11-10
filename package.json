@@ -1,0 +1,38 @@
+{
+  "name": "iidx-lambda",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:Puffycheeses/iidx-lambda.git",
+  "author": "contact@pfy.ch",
+  "license": "MIT",
+  "private": false,
+  "scripts": {
+    "serverless-offline": "serverless offline",
+    "serverless-debug": "node --inspect ./node_modules/serverless/bin/serverless.js offline start -s dev"
+  },
+  "dependencies": {
+    "@types/aws-lambda": "^8.10.64",
+    "awesome-typescript-loader": "^5.2.1",
+    "aws-lambda": "^1.0.6",
+    "aws-xray-sdk-core": "^3.2.0",
+    "dotenv-webpack": "^5.1.0",
+    "serverless": "^2.11.1",
+    "serverless-functions-base-path": "^1.0.32",
+    "serverless-offline": "^6.8.0",
+    "serverless-webpack": "^5.3.5",
+    "typescript": "^4.0.5",
+    "webpack": "^5.4.0",
+    "webpack-node-externals": "^2.5.2"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^4.7.0",
+    "@typescript-eslint/parser": "^4.7.0",
+    "eslint": "^7.13.0",
+    "eslint-config-airbnb": "^18.2.1",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-jsx-a11y": "^6.4.1",
+    "eslint-plugin-react": "^7.21.5",
+    "eslint-plugin-react-hooks": "^4.2.0",
+    "prettier": "^2.1.2"
+  }
+}
