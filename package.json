@@ -8,7 +8,9 @@
   "private": false,
   "scripts": {
     "serverless-offline": "serverless offline",
-    "serverless-debug": "node --inspect ./node_modules/serverless/bin/serverless.js offline start -s dev"
+    "serverless-debug": "node --inspect ./node_modules/serverless/bin/serverless.js offline start -s dev",
+    "postinstall": "husky install",
+    "lint": "echo 'Not implemented'"
   },
   "dependencies": {
     "@types/aws-lambda": "^8.10.64",
@@ -33,6 +35,8 @@
     "eslint-plugin-jsx-a11y": "^6.4.1",
     "eslint-plugin-react": "^7.21.5",
     "eslint-plugin-react-hooks": "^4.2.0",
+    "husky": "^5.0.0-beta.0",
+    "pinst": "^2.0.0",
     "prettier": "^2.1.2"
   }
 }
