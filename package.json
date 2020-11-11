@@ -10,7 +10,7 @@
     "serverless-offline": "serverless offline",
     "serverless-debug": "node --inspect ./node_modules/serverless/bin/serverless.js offline start -s dev",
     "postinstall": "husky install",
-    "lint": "echo 'Not implemented'"
+    "lint": "./scripts/lint.sh"
   },
   "dependencies": {
     "@types/aws-lambda": "^8.10.64",
