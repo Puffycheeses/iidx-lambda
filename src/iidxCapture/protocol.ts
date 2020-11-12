@@ -6,7 +6,10 @@ interface rc4cryptInput {
   key: Buffer;
 }
 
-const SHARED_SECRET = Buffer.from('\x69\xD7\x46\x27\xD9\x85\xEE\x21\x87\x16\x15\x70\xD0\x8D\x93\xB1\x24\x55\x03\x5B\x6D\xF0\xD8\x20\x5D\xF5', 'ascii');
+const SHARED_SECRET = Buffer.from(
+  '\x69\xD7\x46\x27\xD9\x85\xEE\x21\x87\x16\x15\x70\xD0\x8D\x93\xB1\x24\x55\x03\x5B\x6D\xF0\xD8\x20\x5D\xF5',
+  'ascii',
+);
 
 const rc4crypt = (args: rc4cryptInput): any => {
   const S: number[] = Array.from(Array(256).keys());
@@ -51,7 +54,10 @@ const decrypt = (args: decryptInput): Buffer => {
 
   if (args.encryptionKey) {
     const [version, first, second] = args.encryptionKey.split('-');
-    const parsedKey = Buffer.concat([Buffer.from(first + second, 'hex'), SHARED_SECRET]);
+    const parsedKey = Buffer.concat([
+      Buffer.from(first + second, 'hex'),
+      SHARED_SECRET,
+    ]);
 
     const key = createHash('md5').update(parsedKey).digest();
     return rc4crypt({ data: args.data, key });
