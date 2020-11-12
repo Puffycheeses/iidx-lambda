@@ -1,6 +1,6 @@
 import { APIGatewayEvent, Context } from 'aws-lambda';
 import { Segment } from 'aws-xray-sdk-core';
-import { decode } from './protocol';
+import { decode } from './protocol/protocol';
 
 export const handler = async (
   event: APIGatewayEvent,
@@ -8,11 +8,6 @@ export const handler = async (
 ): Promise<void> => {
   const segment = new Segment('hello.handler');
   try {
-    console.log('EVENT:', event);
-    console.log('#################');
-    console.log('CONTEXT:', context);
-    console.log('#################');
-
     if (event.headers['X-Compress'] !== 'none') {
       throw Error('Compression Not Implemented');
     }
@@ -22,10 +17,10 @@ export const handler = async (
     const decodeBody = decode({
       data: (event.body as unknown) as Buffer,
       encryption: event.headers['X-Eamuse-Info'],
+      compression: event.headers['X-Compress'],
     });
 
-    console.log('DECODED:', decodeBody);
-    console.log('#################');
+    console.log(decodeBody);
 
     return;
 

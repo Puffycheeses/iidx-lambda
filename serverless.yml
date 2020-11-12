@@ -21,7 +21,7 @@ functions:
     events:
       - http: GET hello
   iidx:
-    handler: iidxCapture/iidxCapture.handler
+    handler: iidx/iidxCapture.handler
     events:
       - http: GET iidx
       - http: POST iidx
