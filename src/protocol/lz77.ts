@@ -1,4 +1,4 @@
-export const lz77Decompress = (data: Buffer, backref?: number): Generator<Buffer> => {
+const lz77Decompress = (data: Buffer, backref?: number): Generator<Buffer> => {
   const RING_LENGTH = 0x1000;
   const FLAG_COPY = 1;
   const FLAG_BACKREF = 0;
@@ -129,4 +129,154 @@ export const lz77Decompress = (data: Buffer, backref?: number): Generator<Buffer
   }
 
   return decompressBytes();
+};
+
+const lz77Compress = (data: Buffer, backref?: number): Generator<Buffer> => {
+  const RING_LENGTH = 0x1000;
+  const LOOSE_COMPRESS_THRESHOLD = 1024 * 512;
+  const FLAG_COPY = 1;
+  const FLAG_BACKREF = 0;
+
+  let readPos = 0;
+  let left = data.length;
+  let eof = false;
+  let bytesWritten = 0;
+  const ringLength = backref || RING_LENGTH;
+  let locations: Record<number, Set<number>>;
+  let starts: Record<string, Set<number>>; // We .toString() the buffer to get key.
+  let lastStart: [number, number, number] = [0, 0, 0];
+
+  function ringWriteStartsOnly(byteData: Buffer): void {
+    byteData.forEach((byte) => {
+      lastStart = [lastStart[1], lastStart[2], byte];
+      if (bytesWritten >= 2) {
+        starts[lastStart.toString()].add(bytesWritten - 2);
+      }
+
+      bytesWritten += 1;
+    });
+  }
+
+  function ringWriteBoth(byteData: Buffer): void {
+    byteData.forEach((byte) => {
+      lastStart = [lastStart[1], lastStart[2], byte];
+      if (bytesWritten >= 2) {
+        starts[lastStart.toString()].add(bytesWritten - 2);
+      }
+
+      locations[byte].add(bytesWritten);
+
+      bytesWritten += 1;
+    });
+  }
+
+  // We can safely ignore this warning since we assign directly bellow
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  let ringWrite: Function;
+  if (data.length > LOOSE_COMPRESS_THRESHOLD) {
+    ringWrite = ringWriteStartsOnly;
+  } else {
+    ringWrite = ringWriteBoth;
+  }
+
+  function* compressBytes(): Generator<Buffer> {
+    while (!eof) {
+      if (left === 0) {
+        eof = true;
+        yield Buffer.alloc(3, 0x00);
+      } else {
+        let flags = 0x0;
+        let flagPos = -1;
+        // Idk what to name this Python examples use self. everywhere meaning vars get "duplicated".
+        const smallData = Buffer.alloc(8);
+
+        smallData.forEach(() => {
+          flagPos += 1;
+
+          if (left === 0) {
+            flags |= FLAG_BACKREF << flagPos;
+            smallData.fill(0x00, flagPos, flagPos + 1);
+            eof = true;
+          } else if (left < 3 || bytesWritten < 3) {
+            flags |= FLAG_COPY << flagPos;
+            const chunk = data.slice(readPos, readPos + 1);
+            ringWrite(chunk);
+
+            readPos += 1;
+            left -= 1;
+          }
+
+          const backrefAmount = Math.min(left, 18);
+
+          const earliest = Math.max(0, bytesWritten - (ringLength - 1));
+          let index = data.slice(readPos, readPos + 3);
+          const updatedBackrefLocations: Set<number> = new Set(
+            [...starts[index.toString()]].filter(
+              (absolutePos) => absolutePos >= earliest,
+            ),
+          );
+          starts[index.toString()] = updatedBackrefLocations;
+          let possibleBackrefLocations = [...updatedBackrefLocations];
+
+          if (!possibleBackrefLocations) {
+            flags |= FLAG_COPY << flagPos;
+
+            const chunk = data.slice(readPos, readPos + 1);
+            ringWrite(chunk);
+
+            readPos += 1;
+            left -= 1;
+          }
+
+          const startWriteSize = bytesWritten;
+          ringWrite(index);
+          let copyAmount = 3;
+
+          while (copyAmount < backrefAmount) {
+            index = data.slice(readPos + copyAmount, readPos + copyAmount + 3);
+            let shadowLocations = starts[index.toString()];
+            let newBackrefLocations = [...possibleBackrefLocations].filter(
+              (absolutePos) => shadowLocations.has(absolutePos + copyAmount),
+            );
+
+            if (newBackrefLocations.length > 0) {
+              ringWrite(index);
+              copyAmount += 3;
+              possibleBackrefLocations = newBackrefLocations;
+            } else {
+              while (copyAmount < backrefAmount) {
+                shadowLocations = locations[data[readPos + copyAmount]];
+                newBackrefLocations = [...possibleBackrefLocations].filter(
+                  (absolutePos) => shadowLocations.has(absolutePos + copyAmount),
+                );
+
+                if (!newBackrefLocations) {
+                  return;
+                }
+
+                ringWrite(data.slice(readPos + copyAmount, readPos + copyAmount + 1));
+                copyAmount += 1;
+                possibleBackrefLocations = newBackrefLocations;
+              }
+            }
+          }
+
+          const absolutePos = possibleBackrefLocations[0];
+          const backrefPos = startWriteSize - absolutePos;
+
+          const lo = (copyAmount - 3) & 0xF || ((backrefPos & 0xF) << 4);
+          const hi = (backrefPos >> 4) & 0xFF;
+          flags |= FLAG_BACKREF << flagPos;
+          data.fill(hi, flagPos);
+          data.fill(lo, flagPos + 1);
+          readPos += copyAmount;
+          left -= copyAmount;
+        });
+
+        yield Buffer.alloc((data.length + 1), Buffer.from([flags, ...data]));
+      }
+    }
+  }
+
+  return compressBytes();
 };
