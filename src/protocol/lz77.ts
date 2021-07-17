@@ -1,4 +1,4 @@
-const lz77Decompress = (data: Buffer, backref?: number): Generator<Buffer> => {
+const lz77Decompress = (data: Buffer, backref?: number): void => {
   const RING_LENGTH = 0x1000;
   const FLAG_COPY = 1;
   const FLAG_BACKREF = 0;
@@ -127,11 +127,9 @@ const lz77Decompress = (data: Buffer, backref?: number): Generator<Buffer> => {
       }
     }
   }
-
-  return decompressBytes();
 };
 
-const lz77Compress = (data: Buffer, backref?: number): Generator<Buffer> => {
+const lz77Compress = (data: Buffer, backref?: number): void => {
   const RING_LENGTH = 0x1000;
   const LOOSE_COMPRESS_THRESHOLD = 1024 * 512;
   const FLAG_COPY = 1;
@@ -142,32 +140,40 @@ const lz77Compress = (data: Buffer, backref?: number): Generator<Buffer> => {
   let eof = false;
   let bytesWritten = 0;
   const ringLength = backref || RING_LENGTH;
-  let locations: Record<number, Set<number>>;
-  let starts: Record<string, Set<number>>; // We .toString() the buffer to get key.
+  const locations: Record<number, Set<number>> = {};
+  const starts: Record<string, Set<number>> = {}; // We .toString() the buffer to get key.
   let lastStart: [number, number, number] = [0, 0, 0];
 
   function ringWriteStartsOnly(byteData: Buffer): void {
-    byteData.forEach((byte) => {
+    for (const byte of byteData) {
       lastStart = [lastStart[1], lastStart[2], byte];
       if (bytesWritten >= 2) {
         starts[lastStart.toString()].add(bytesWritten - 2);
       }
 
       bytesWritten += 1;
-    });
+    }
   }
 
   function ringWriteBoth(byteData: Buffer): void {
-    byteData.forEach((byte) => {
+    for (const byte of byteData) {
       lastStart = [lastStart[1], lastStart[2], byte];
       if (bytesWritten >= 2) {
-        starts[lastStart.toString()].add(bytesWritten - 2);
+        if (starts && starts[lastStart.toString()]) {
+          starts[lastStart.toString()].add(bytesWritten - 2);
+        } else {
+          starts[lastStart.toString()] = new Set<number>().add(bytesWritten - 2);
+        }
       }
 
-      locations[byte].add(bytesWritten);
+      if (locations && locations[byte]) {
+        locations[byte].add(bytesWritten);
+      } else {
+        locations[byte] = new Set<number>().add(bytesWritten);
+      }
 
       bytesWritten += 1;
-    });
+    }
   }
 
   // We can safely ignore this warning since we assign directly bellow
@@ -210,11 +216,13 @@ const lz77Compress = (data: Buffer, backref?: number): Generator<Buffer> => {
 
           const earliest = Math.max(0, bytesWritten - (ringLength - 1));
           let index = data.slice(readPos, readPos + 3);
-          const updatedBackrefLocations: Set<number> = new Set(
-            [...starts[index.toString()]].filter(
-              (absolutePos) => absolutePos >= earliest,
-            ),
-          );
+          const updatedBackrefLocations: Set<number> = starts[index.toString()]
+            ? new Set(
+              [...starts[index.toString()]].filter(
+                (absolutePos) => absolutePos >= earliest,
+              ),
+            )
+            : new Set();
           starts[index.toString()] = updatedBackrefLocations;
           let possibleBackrefLocations = [...updatedBackrefLocations];
 
@@ -277,6 +285,4 @@ const lz77Compress = (data: Buffer, backref?: number): Generator<Buffer> => {
       }
     }
   }
-
-  return compressBytes();
 };

@@ -9,7 +9,8 @@
   "scripts": {
     "serverless-offline": "serverless offline",
     "serverless-debug": "node --inspect ./node_modules/serverless/bin/serverless.js offline start -s dev",
-    "lint": "./scripts/lint.sh"
+    "lint": "./scripts/lint.sh",
+    "lz77-test": "ts-node src/protocol/lz77"
   },
   "dependencies": {
     "@types/aws-lambda": "^8.10.64",
