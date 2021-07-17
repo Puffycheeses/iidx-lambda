@@ -11,6 +11,9 @@
     "airbnb"
   ],
   "rules": {
+    "no-bitwise": "off",
+    "no-unused-vars": "warn",
+    "no-param-reassign": "off",
     "import/extensions": [
       "error",
       "ignorePackages",
